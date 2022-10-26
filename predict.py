@@ -15,20 +15,21 @@ from keras.models import Model
 from keras.callbacks import ModelCheckpoint
 import matplotlib.pyplot as plt
 import random
-from keras.models import  load_model
+from keras.models import load_model
 import sys
- 
+from keras.applications.resnet import ResNet50
+from keras.layers.pooling import AveragePooling2D
+
 cap = cv2.VideoCapture(0)
 
 # Dinh nghia class
-class_name = ['00000','10000','20000','50000']
+class_name = ['00000', '10000', '20000', '50000']
 # ap = argparse.ArgumentParser()
 # ap.add_argument("-v", "--video", required=True)
 # args = vars(ap.parse_args())
 
 # Load model da train
-model = load_model('models/resnetmodel.h5')
-model.load_weights("weights-01-0.99.hdf5")
+
 
 # Khai bao queue nhan dien
 # mean = np.array([123.68, 116.779, 103.939][::1], dtype="float32")
@@ -79,14 +80,37 @@ model.load_weights("weights-01-0.99.hdf5")
 #                 break
 
 # vs.release()
-while(True):
-    # Capture frame-by-frame
-    #
+def get_model():
+    model_resnet_conv = ResNet50(
+        weights="imagenet", include_top=False,	input_tensor=Input(shape=(224, 224, 3)))
 
+
+    output_resnet_conv = model_resnet_conv.output
+    
+# Them cac layer FC va Dropout
+    output_resnet_conv = AveragePooling2D(pool_size=(7, 7))(output_resnet_conv)
+    output_resnet_conv = Flatten(name="flatten")(output_resnet_conv)
+    output_resnet_conv = Dense(512, activation="relu")(output_resnet_conv)
+    output_resnet_conv = Dropout(0.5)(output_resnet_conv)
+    output_resnet_conv = Dense(7, activation="softmax")(output_resnet_conv)
+
+# Dong bang cac layer
+    for layer in model_resnet_conv.layers:
+        layer.trainable = False
+# Compile
+    my_model = Model(inputs=model_resnet_conv.input,
+                     outputs=output_resnet_conv)
+    my_model.compile(loss='categorical_crossentropy',
+                     optimizer='adam', metrics=['accuracy'])
+    return my_model
+model = get_model()
+model.load_weights("weights-01-0.99.hdf5")
+while (True):
+    # Capture frame-by-frame
     ret, image_org = cap.read()
     if not ret:
         continue
-    image_org = cv2.resize(image_org, dsize=None,fx=0.5,fy=0.5)
+    image_org = cv2.resize(image_org, dsize=None, fx=0.5, fy=0.5)
     # Resize
     image = image_org.copy()
     image = cv2.resize(image, dsize=(128, 128))
@@ -97,9 +121,8 @@ while(True):
     # Predict
     predict = model.predict(image)
     print("This picture is: ", class_name[np.argmax(predict[0])], (predict[0]))
-    print(np.max(predict[0],axis=0))
-    if (np.max(predict)>=0.8) and (np.argmax(predict[0])!=0):
-
+    print(np.max(predict[0], axis=0))
+    if (np.max(predict) >= 0.8) and (np.argmax(predict[0]) != 0):
 
         # Show image
         font = cv2.FONT_HERSHEY_SIMPLEX
