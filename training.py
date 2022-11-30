@@ -12,7 +12,7 @@ from keras.optimizers import gradient_descent_v2
 from sklearn.preprocessing import LabelBinarizer
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
-from imutils import paths
+# from imutils import paths
 import matplotlib.pyplot as plt
 import numpy as np
 import argparse
@@ -158,8 +158,7 @@ checkpoint = ModelCheckpoint(
     filepath, monitor='val_accuracy', verbose=1, save_best_only=True, mode='max')
 callbacks_list = [checkpoint]
 
-trainAug = ImageDataGenerator(rotation_range=30,zoom_range=0.15,width_shift_range=0.2,height_shift_range=0.2,shear_range=0.15,horizontal_flip=True,
-                              fill_mode="nearest")
+trainAug = ImageDataGenerator(rotation_range=30,zoom_range=0.15,width_shift_range=0.2,height_shift_range=0.2,shear_range=0.15,horizontal_flip=True,fill_mode="nearest")
 
 valAug = ImageDataGenerator()
 
